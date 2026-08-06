@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏟 CrowdPulse — AI Stadium Operations Center</title>
+  <meta name="description" content="Premium real-time telemetry and crowd congestion command dashboard for FIFA World Cup 2026 stadium operations.">
+  
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Chart.js CDN for sparklines -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Background Glowing Orbs -->
+  <div class="glow-container" aria-hidden="true"></div>
+
+  <div class="app-container">
+    
+    <!-- Floating Glass Header -->
+    <header class="dashboard-header" id="main-header">
+      <div class="header-brand">
+        <!-- Stadium Logo -->
+        <svg class="brand-logo-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5">
+          <ellipse cx="12" cy="12" rx="10" ry="6" />
+          <path d="M12 2v20M2 12h20M7 6c2 2.5 2 9.5 0 12M17 6c-2 2.5-2 9.5 0 12" stroke-linecap="round"/>
+        </svg>
+        <div class="brand-text">
+          <h1>🏟 CrowdPulse</h1>
+          <div class="brand-tag">AI Stadium Operations Center</div>
+        </div>
+      </div>
+      
+      <div class="header-meta">
+        <!-- WebSocket status -->
+        <div class="status-badge-container" id="ws-status-widget">
+          <span class="status-pulse" id="ws-status-dot"></span>
+          <span class="status-label" id="ws-status-text">OFFLINE</span>
+        </div>
+        
+        <!-- GenAI system badge (Model name generic/omitted from visual tag as requested) -->
+        <div class="ai-status-indicator" title="Model configuration: claude-sonnet-4-5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          <span>AI TACTICAL ANALYST ONLINE</span>
+        </div>
+        
+        <!-- Live Clock -->
+        <div class="header-clock" id="header-clock">00:00:00</div>
+      </div>
+    </header>
+
+    <!-- Main Dashboard layout grid -->
+    <main class="dashboard-grid">
+      
+      <!-- Left Panel: KPIs, Map, and Zone Cards (72%) -->
+      <div class="telemetry-layout">
+        
+        <!-- 4 KPI Cards Ribbon -->
+        <section class="kpi-container" aria-label="Key Performance Indicators">
+          <!-- Total Occupancy -->
+          <div class="kpi-card" id="kpi-card-occupancy">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Stadium Load</span>
+              <span class="kpi-chip" id="kpi-occupancy-chip">Normal</span>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-value" id="kpi-total-occupancy">0%</span>
+              <div class="kpi-sparkline">
+                <canvas id="chart-kpi-occupancy"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Critical Zones Count -->
+          <div class="kpi-card" id="kpi-card-critical">
+            <div class="kpi-header">
+              <span class="kpi-title">Critical Bottlenecks</span>
+              <span class="kpi-chip" id="kpi-critical-chip">Optimal</span>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-value" id="kpi-critical-zones">0</span>
+              <div class="kpi-sparkline">
+                <canvas id="chart-kpi-critical"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Average Occupancy Trend -->
+          <div class="kpi-card" id="kpi-card-trend">
+            <div class="kpi-header">
+              <span class="kpi-title">Avg Flow Trend</span>
+              <span class="kpi-chip" id="kpi-trend-chip">Stable</span>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-value" id="kpi-avg-trend" style="font-size: 26px;">STABLE</span>
+              <div class="kpi-sparkline">
+                <canvas id="chart-kpi-trend"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zones Nearing Capacity -->
+          <div class="kpi-card" id="kpi-card-warning">
+            <div class="kpi-header">
+              <span class="kpi-title">Nearing Capacity</span>
+              <span class="kpi-chip" id="kpi-warning-chip">0 Zones</span>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-value" id="kpi-nearing-capacity">0</span>
+              <div class="kpi-sparkline">
+                <canvas id="chart-kpi-warning"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mid section: 2D map schematic + Zone Cards -->
+        <div class="mid-section-layout">
+          
+          <!-- Stadium 2D Schematic Card -->
+          <section class="map-card" aria-label="Stadium Schematic Overlay">
+            <div class="map-card-header">
+              <h2>Stadium Blueprint Overview</h2>
+              <div class="map-legend">
+                <div class="legend-item"><span class="legend-dot normal"></span><span>&lt;60%</span></div>
+                <div class="legend-item"><span class="legend-dot warning"></span><span>60-85%</span></div>
+                <div class="legend-item"><span class="legend-dot critical"></span><span>&gt;85%</span></div>
+              </div>
+            </div>
+            
+            <div class="stadium-svg-container">
+              <!-- Top-down vector schematic map -->
+              <svg class="stadium-svg" viewBox="0 0 500 350">
+                <!-- Stadium Background Ring -->
+                <ellipse cx="250" cy="170" rx="200" ry="130" class="stadium-bg" />
+                <ellipse cx="250" cy="170" rx="170" ry="100" class="stadium-outer-ring" />
+                
+                <!-- Football Pitch -->
+                <rect x="180" y="135" width="140" height="70" rx="4" class="stadium-pitch" />
+                <line x1="250" y1="135" x2="250" y2="205" stroke="rgba(255,255,255,0.06)" />
+                <circle cx="250" cy="170" r="20" fill="none" stroke="rgba(255,255,255,0.06)" />
+
+                <!-- Transit Link (Dashed Line) -->
+                <line x1="380" y1="170" x2="425" y2="170" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4,4" stroke-width="2" />
+                
+                <!-- 8 Solid Filled Interactive Zones (No overlap) -->
+                <!-- Main Concourse hollow ellipse ring -->
+                <path id="map-main_concourse" class="stadium-zone-path" d="M 100,90 A 150,95 0 0,1 400,90 A 150,95 0 0,1 400,250 A 150,95 0 0,1 100,250 Z M 140,120 A 110,65 0 0,0 140,220 A 110,65 0 0,0 360,220 A 110,65 0 0,0 360,120 Z" fill-rule="evenodd" />
+                
+                <!-- Food Court (Inside Concourse, Top section) -->
+                <path id="map-food_court" class="stadium-zone-path" d="M 155,122 A 95,54 0 0,1 345,122 L 320,133 A 75,38 0 0,0 180,133 Z" />
+                
+                <!-- Restroom Block 1 (Small Upper Right Block) -->
+                <rect id="map-restroom_block_1" class="stadium-zone-path" x="350" y="55" width="30" height="20" rx="3" />
+                
+                <!-- Gates A-D around perimeter -->
+                <!-- Gate A (North) -->
+                <path id="map-gate_a" class="stadium-zone-path" d="M 200,30 L 300,30 L 285,48 L 215,48 Z" />
+                <!-- Gate B (East) -->
+                <path id="map-gate_b" class="stadium-zone-path" d="M 450,130 L 450,210 L 432,195 L 432,145 Z" />
+                <!-- Gate C (South) -->
+                <path id="map-gate_c" class="stadium-zone-path" d="M 300,310 L 200,310 L 215,292 L 285,292 Z" />
+                <!-- Gate D (West) -->
+                <path id="map-gate_d" class="stadium-zone-path" d="M 50,210 L 50,130 L 68,145 L 68,195 Z" />
+                
+                <!-- Transit Hub (External Right Box) -->
+                <rect id="map-transit_hub" class="stadium-zone-path" x="425" y="150" width="50" height="40" rx="6" />
+
+                <!-- Text labels placed outside/below shapes with enough padding (No overlap) -->
+                <!-- Gate A label (Above) -->
+                <text x="250" y="22" class="stadium-label">GATE A</text>
+                
+                <!-- Gate B label (Right) -->
+                <text x="466" y="170" class="stadium-label" transform="rotate(90, 466, 170)">GATE B</text>
+                
+                <!-- Gate C label (Below) -->
+                <text x="250" y="325" class="stadium-label">GATE C</text>
+                
+                <!-- Gate D label (Left) -->
+                <text x="34" y="170" class="stadium-label" transform="rotate(-90, 34, 170)">GATE D</text>
+                
+                <!-- Main Concourse label (Top inside ring) -->
+                <text x="250" y="103" class="stadium-label">MAIN CONCOURSE</text>
+                
+                <!-- Food Court label (Inside pitch/outer boundary) -->
+                <text x="250" y="218" class="stadium-label">FOOD COURT</text>
+                
+                <!-- Restroom Block 1 (WC1) label -->
+                <text x="365" y="47" class="stadium-label">WC 1</text>
+                
+                <!-- Transit Hub label -->
+                <text x="450" y="206" class="stadium-label">TRANSIT HUB</text>
+              </svg>
+            </div>
+          </section>
+
+          <!-- Zone grid telemetry area -->
+          <div class="zones-grid-layout">
+            <div class="grid-section-header">
+              <h2>Operations Zone Telemetry</h2>
+              <span class="grid-section-meta" id="grid-meta-tag">BROADCAST ACTIVE</span>
+            </div>
+            
+            <div class="zones-grid" id="zones-grid">
+              <!-- Cards dynamically rendered here -->
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+              <div class="loading-card-shimmer"></div>
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+
+      <!-- Right Sidebar Column: AI Briefing, Chat, Alerts (28%) -->
+      <aside class="sidebar-panel">
+        
+        <!-- GenAI Operational Briefing Card -->
+        <section class="ai-briefing-card" id="ai-briefing-widget">
+          <div class="ai-card-header">
+            <div class="ai-title-block">
+              <svg class="ai-spark-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <h3>AI Tactical Command Briefing</h3>
+            </div>
+            <button class="btn-ai-refresh" id="btn-refresh-insight" title="Manually update briefing with current telemetry">
+              <svg class="refresh-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+          
+          <div class="ai-briefing-body">
+            <div id="insight-loading" class="spinner-backdrop hidden">
+              <div class="spinner-ring"></div>
+              <span>Analysing telemetry...</span>
+            </div>
+            
+            <div class="briefing-bubble">
+              <p class="briefing-text" id="briefing-text-element">Retrieving live operations briefing...</p>
+              <span class="typing-cursor" id="briefing-cursor"></span>
+            </div>
+            
+            <div class="briefing-meta">
+              <span class="confidence-indicator" id="briefing-confidence">CONFIDENCE: 98%</span>
+              <span class="briefing-clock" id="briefing-time-stamp">Last calculated: Just now</span>
+            </div>
+          </div>
+
+          <!-- Staff Query Input Box (Docked below briefing) -->
+          <div class="staff-query-container" id="staff-chat-widget">
+            <div id="chat-thread-box" class="hidden">
+              <div class="chat-bubble-reply">
+                <strong id="chat-query-echo">Query:</strong>
+                <p id="chat-response-text"></p>
+              </div>
+            </div>
+            
+            <form class="chat-query-form" id="chat-query-form">
+              <input 
+                type="text" 
+                id="chat-query-input" 
+                class="chat-query-input"
+                placeholder="Ask ops assistant... (e.g. 'Which gate is clearest?')" 
+                required 
+                autocomplete="off"
+              >
+              <button type="submit" id="btn-submit-chat" class="btn-chat-submit" aria-label="Send Query">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Live Alert Timeline Feed -->
+        <section class="alert-feed-card" id="alert-feed-widget">
+          <div class="alert-card-header">
+            <div class="alert-title-block">
+              <span class="alert-count-badge" id="alert-badge-count">0</span>
+              <h3>Tactical Action Alerts</h3>
+            </div>
+            <span class="alert-monitoring-badge">MONITORING</span>
+          </div>
+          
+          <div class="alert-timeline" id="alert-list-container">
+            <div class="no-alerts-view" id="no-alerts-view">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" style="margin-bottom: 8px;">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <p>All stadium zones operating normally.</p>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+
+    </main>
+
+    <!-- Bottom Footer -->
+    <footer class="app-footer">
+      <p>&copy; FIFA WORLD CUP 2026. STADIUM OPERATIONS PLATFORM. ALL RIGHTS RESERVED.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

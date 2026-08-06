@@ -1,0 +1,16 @@
+{
+  "name": "crowdpulse",
+  "version": "1.0.0",
+  "description": "FIFA World Cup 2026 Stadium Crowd Congestion Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  },
+  "private": true
+}
