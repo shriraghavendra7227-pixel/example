@@ -1,0 +1,5 @@
+Example,sky,air temp,humdity,wind,forecast,enjoy sport
+1,sunny,warm,normal,strong,same,yes
+2,sunny,warm,high,strong,same,yes
+3,sunny,cold,high,strong,change,no
+4,sunny,warm,high,strong,change,yes
